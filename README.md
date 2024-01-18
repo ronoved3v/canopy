@@ -15,7 +15,7 @@ Canopy is a comprehensive application designed to streamline the management of T
 - Modular components and features for easy maintenance.
 
 ## Getting Started
-1. Clone the repository: `git clone https://github.com/your-username/canopy.git`
+1. Clone the repository: `git clone https://github.com/ronoved3v/canopys`
 2. Navigate to the project directory: `cd canopy`
 3. Install dependencies: `npm install`
 4. Configure and run the client and server as needed.
