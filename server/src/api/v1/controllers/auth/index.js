@@ -57,18 +57,10 @@ export const login = async (req, res) => {
 		const { username, password } = req.body;
 
 		if (!username || !password) {
-			const missingFields = [];
-
-			if (!username) {
-				missingFields.push("username or email");
-			}
-
-			if (!password) {
-				missingFields.push("password");
-			}
-
 			return res.status(400).json({
-				message: `Missing required fields: ${missingFields.join(", ")}`,
+				message: `Missing required fields: ${
+					!username ? "username or email" : ""
+				} ${!password ? "password" : ""}`.trim(),
 			});
 		}
 
@@ -77,7 +69,7 @@ export const login = async (req, res) => {
 		});
 
 		if (!user) {
-			return res.status(400).json({ message: "Tai khoan khong ton tai" });
+			return res.status(400).json({ message: "Account not found" });
 		}
 
 		const passwordCheck = await bcrypt.compare(password, user.password);
@@ -106,6 +98,58 @@ export const login = async (req, res) => {
 		return res.status(200).json({ ...others, access_token });
 	} catch (error) {
 		console.error(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+};
+
+export const refresh = async (req, res) => {
+	try {
+		const refresh_token = req.cookies.refresh_token;
+		if (!refresh_token) {
+			return res.status(401).json({ message: "You're not authenticated" });
+		}
+
+		const userId = req.user._id;
+		const storedRefreshToken = await redis.get(
+			`canopy_refresh_token:${userId}`,
+		);
+		if (!storedRefreshToken || refresh_token !== storedRefreshToken) {
+			return res.status(403).json({ message: "Refresh token is not valid" });
+		}
+
+		jwt.verify(
+			refresh_token,
+			process.env.JWT_REFRESH_SECRET,
+			async (error, user) => {
+				if (error) {
+					console.log(error);
+					return res.status(403).json({ message: "Invalid refresh token" });
+				}
+
+				await redis.del(`canopy_refresh_token:${userId}`);
+				const newAccessToken = generateToken(
+					user,
+					process.env.JWT_ACCESS_SECRET,
+				);
+				const newRefreshToken = generateToken(
+					user,
+					process.env.JWT_REFRESH_SECRET,
+				);
+
+				await redis.set(`canopy_refresh_token:${userId}`, newRefreshToken);
+
+				res.cookie("refresh_token", newRefreshToken, {
+					httpOnly: true,
+					secure: process.env.NODE_ENV === "production" ? true : false,
+					path: "/",
+					sameSite: "strict",
+				});
+
+				return res.status(200).json({ access_token: newAccessToken });
+			},
+		);
+	} catch (error) {
+		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
 	}
 };
