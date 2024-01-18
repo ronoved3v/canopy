@@ -1,0 +1,15 @@
+{
+  "name": "canopy",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "install": "npm install --workspaces",
+    "dev": "npm-run-all --parallel client:dev server:dev",
+    "client:dev": "cd client && npm run dev",
+    "server:dev": "cd server && npm run dev"
+  }
+}
