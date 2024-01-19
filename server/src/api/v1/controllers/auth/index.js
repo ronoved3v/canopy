@@ -1,11 +1,18 @@
 import Users from "../../models/Users.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
 import redis from "../../helpers/redis.js";
 
-const generateToken = (payload, secret, expired) => {
-	return jwt.sign(payload, secret, expired ? { expiresIn: expired } : {});
+const generateJWT = (payload, secret, expires) => {
+	return jwt.sign(
+		payload,
+		secret,
+		expires
+			? {
+					expiresIn: expires,
+			  }
+			: {},
+	);
 };
 
 export const register = async (req, res) => {
@@ -13,22 +20,10 @@ export const register = async (req, res) => {
 		const { username, password, email } = req.body;
 
 		if (!username || !password || !email) {
-			const missingFields = [];
-
-			if (!username) {
-				missingFields.push("username");
-			}
-
-			if (!password) {
-				missingFields.push("password");
-			}
-
-			if (!email) {
-				missingFields.push("email");
-			}
-
 			return res.status(400).json({
-				message: `Missing required fields: ${missingFields.join(", ")}`,
+				message: `Missing required fields: ${!username ? "username" : ""} ${
+					!password ? "password" : ""
+				} ${!email ? "email" : ""}`.trim(),
 			});
 		}
 
@@ -43,9 +38,11 @@ export const register = async (req, res) => {
 		const salt = await bcrypt.genSalt(10);
 		const hashed = await bcrypt.hash(password, salt);
 
-		await Users.create({ username, password: hashed, email });
+		const newUser = await Users.create({ username, password: hashed, email });
 
-		return res.status(200).json({ username, password, email });
+		const { password: userPassword, ...others } = newUser._doc;
+
+		return res.status(200).json(others);
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ message: "Internal server error" });
@@ -72,25 +69,28 @@ export const login = async (req, res) => {
 			return res.status(400).json({ message: "Account not found" });
 		}
 
-		const passwordCheck = await bcrypt.compare(password, user.password);
+		const passwordCompare = await bcrypt.compare(password, user.password);
 
-		if (!passwordCheck)
+		if (!passwordCompare)
 			return res.status(404).json({ message: "Invalid password" });
 
 		const { password: userPassword, ...others } = user._doc;
 
-		const access_token = generateToken(
-			others,
+		const access_token = generateJWT(
+			{ ...others },
 			process.env.JWT_ACCESS_SECRET,
-			"30s",
+			"1h",
 		);
-		const refresh_token = generateToken(others, process.env.JWT_REFRESH_SECRET);
+		const refresh_token = generateJWT(
+			{ ...others },
+			process.env.JWT_REFRESH_SECRET,
+		);
 
 		await redis.set(`canopy_refresh_token:${user._id}`, refresh_token);
 
 		res.cookie("refresh_token", refresh_token, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production" ? true : false,
+			secure: process.env.NODE_ENV === "production",
 			path: "/",
 			sameSite: "strict",
 		});
@@ -103,51 +103,68 @@ export const login = async (req, res) => {
 };
 
 export const refresh = async (req, res) => {
+	const refresh_token = req.cookies.refresh_token;
+
+	if (!refresh_token) {
+		return res.status(401).json({ message: "You're not authenticated" });
+	}
+
 	try {
-		const refresh_token = req.cookies.refresh_token;
-		if (!refresh_token) {
-			return res.status(401).json({ message: "You're not authenticated" });
-		}
-
-		const userId = req.user._id;
-		const storedRefreshToken = await redis.get(
-			`canopy_refresh_token:${userId}`,
-		);
-		if (!storedRefreshToken || refresh_token !== storedRefreshToken) {
-			return res.status(403).json({ message: "Refresh token is not valid" });
-		}
-
-		jwt.verify(
+		const decodedUser = jwt.verify(
 			refresh_token,
 			process.env.JWT_REFRESH_SECRET,
-			async (error, user) => {
-				if (error) {
-					console.log(error);
-					return res.status(403).json({ message: "Invalid refresh token" });
-				}
-
-				await redis.del(`canopy_refresh_token:${userId}`);
-				const newAccessToken = generateToken(
-					user,
-					process.env.JWT_ACCESS_SECRET,
-				);
-				const newRefreshToken = generateToken(
-					user,
-					process.env.JWT_REFRESH_SECRET,
-				);
-
-				await redis.set(`canopy_refresh_token:${userId}`, newRefreshToken);
-
-				res.cookie("refresh_token", newRefreshToken, {
-					httpOnly: true,
-					secure: process.env.NODE_ENV === "production" ? true : false,
-					path: "/",
-					sameSite: "strict",
-				});
-
-				return res.status(200).json({ access_token: newAccessToken });
-			},
 		);
+
+		// Check if the refresh_token is in Redis
+		const existingToken = await redis.get(
+			`canopy_refresh_token:${decodedUser._id}`,
+		);
+		if (!existingToken || existingToken !== refresh_token) {
+			// If it is not, or does not match, return an error
+			return res.status(403).json({ message: "Invalid refresh token" });
+		}
+
+		// Extract the non-sensitive fields to include in the new tokens
+		const { iat, exp, ...payload } = decodedUser;
+
+		const newAccessToken = generateJWT(
+			payload,
+			process.env.JWT_ACCESS_SECRET,
+			"1h", // Fixed to 1 hour, adjust as per requirement
+		);
+		const newRefreshToken = generateJWT(
+			payload,
+			process.env.JWT_REFRESH_SECRET,
+		);
+
+		// Overwrite the old refresh token in Redis with the new one
+		await redis.set(`canopy_refresh_token:${decodedUser._id}`, newRefreshToken);
+
+		res.cookie("refresh_token", newRefreshToken, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production", // Set to true in production
+			path: "/",
+			sameSite: "strict",
+		});
+
+		return res.status(200).json({
+			access_token: newAccessToken,
+		});
+	} catch (error) {
+		if (error instanceof jwt.JsonWebTokenError) {
+			// Handle specific JWT errors
+			return res.status(403).json({ message: "Invalid token." });
+		}
+		console.error(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+};
+
+export const userList = async (req, res) => {
+	try {
+		const users = await Users.find();
+
+		return res.status(200).json(users);
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });

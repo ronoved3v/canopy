@@ -32,6 +32,16 @@ class RedisHelper {
 			throw error;
 		}
 	}
+
+	async keys(pattern) {
+		try {
+			const keys = await this.redis.keys(pattern);
+			return keys;
+		} catch (error) {
+			console.error(`Error getting keys from Redis: ${error}`);
+			throw error;
+		}
+	}
 }
 
 const redis = new RedisHelper();

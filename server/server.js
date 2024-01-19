@@ -1,7 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config({
-	path: process.env.NODE_ENV === "production" ? ".env.prod" : ".env.dev",
-});
+import "./dotenv.js";
 
 import app from "./app.js";
 import databaseConnection from "./config/database.js";
