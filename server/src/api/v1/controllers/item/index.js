@@ -73,8 +73,8 @@ export const itemScan = async (req, res) => {
 
 		return res.status(200).json({
 			code: 200,
-			message: "Done",
-			results: { itemIsUpdated, itemHasNoUpdates, newAddedItem },
+			message: "Scanned item successfully",
+			data: { itemIsUpdated, itemHasNoUpdates: itemHasNoUpdates, newAddedItem },
 		});
 	} catch (error) {
 		console.error(error);
@@ -126,9 +126,11 @@ export const getItemDownloadURL = async (req, res) => {
 		} catch (error) {
 			console.log();
 			logger.error(error.response.data.description);
-			return res
-				.status(500)
-				.json({ code: 500, message: error.response.data.description });
+			return res.status(500).json({
+				code: 500,
+				message: error.response.data.description,
+				error: error,
+			});
 		}
 	} catch (error) {
 		logger.error(error);

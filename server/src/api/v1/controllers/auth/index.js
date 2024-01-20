@@ -2,6 +2,7 @@ import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import redis from "../../helpers/redis.js";
+import logger from "../../../../utils/logger/logger.js";
 
 const generateJWT = (payload, secret, expires) => {
 	return jwt.sign(
@@ -177,5 +178,71 @@ export const refresh = async (req, res) => {
 		return res
 			.status(500)
 			.json({ code: 500, message: "Internal server error" });
+	}
+};
+
+export const signout = async (req, res) => {
+	// Retrieve the refresh token from cookies
+	const refreshToken = req.cookies.refresh_token;
+
+	// If there is no refresh token provided, send a 401 Unauthorized response
+	if (!refreshToken) {
+		return res.status(401).json({
+			code: 401,
+			message: "You're not authenticated",
+		});
+	}
+
+	try {
+		// Verify the refresh token to extract the user ID
+		const decodedUser = jwt.verify(
+			refreshToken,
+			process.env.JWT_REFRESH_SECRET,
+		);
+
+		// Retrieve the token from Redis
+		const tokenInRedis = await redis.get(
+			`canopy_refresh_token:${decodedUser._id}`,
+		);
+
+		// Check if the token exists and matches the one from the cookie
+		if (!tokenInRedis || tokenInRedis !== refreshToken) {
+			return res.status(400).json({
+				code: 400,
+				message: "Invalid refresh token",
+			});
+		}
+
+		// Delete the token from Redis
+		await redis.del(`canopy_refresh_token:${decodedUser._id}`);
+
+		// Clear the refresh token cookie
+		res.clearCookie("refresh_token", {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			path: "/",
+			sameSite: "strict",
+		});
+
+		// Send a successful signout response
+		return res.status(200).json({
+			code: 200,
+			message: "Sign out successful",
+		});
+	} catch (error) {
+		// If the token is invalid or there's another error with the JWT, send a 403 Forbidden response
+		if (error instanceof jwt.JsonWebTokenError) {
+			return res.status(403).json({
+				code: 403,
+				message: "Invalid refresh token due to JWT error",
+			});
+		}
+
+		// Log the general error and send a 500 Internal Server Error response
+		logger.error(error);
+		return res.status(500).json({
+			code: 500,
+			message: "Internal server error",
+		});
 	}
 };
