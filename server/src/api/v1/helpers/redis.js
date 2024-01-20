@@ -1,8 +1,8 @@
 import Redis from "ioredis";
-
+import redisConfig from "../../../../config/redis.js";
 class RedisHelper {
 	constructor() {
-		this.redis = new Redis();
+		this.redis = new Redis(redisConfig);
 	}
 
 	async get(key) {
