@@ -32,7 +32,9 @@ export const register = async (req, res) => {
 		});
 
 		if (existingUser) {
-			return res.status(400).json({ message: "User already exists" });
+			return res
+				.status(400)
+				.json({ code: 400, message: "User already exists" });
 		}
 
 		const salt = await bcrypt.genSalt(10);
@@ -42,10 +44,14 @@ export const register = async (req, res) => {
 
 		const { password: userPassword, ...others } = newUser._doc;
 
-		return res.status(201).json(others);
+		return res
+			.status(201)
+			.json({ code: 201, message: "Register successful", data: others });
 	} catch (error) {
 		console.error(error);
-		return res.status(500).json({ message: "Internal server error" });
+		return res
+			.status(500)
+			.json({ code: 500, message: "Internal server error" });
 	}
 };
 
@@ -66,15 +72,15 @@ export const login = async (req, res) => {
 		});
 
 		if (!user) {
-			return res.status(400).json({ message: "Account not found" });
+			return res.status(400).json({ code: 400, message: "Account not found" });
 		}
 
 		const passwordCompare = await bcrypt.compare(password, user.password);
 
 		if (!passwordCompare)
-			return res.status(404).json({ message: "Invalid password" });
+			return res.status(404).json({ code: 404, message: "Invalid password" });
 
-		const { password: userPassword, ...others } = user._doc;
+		const { password: userPassword, accounts, ...others } = user._doc;
 
 		const access_token = generateJWT(
 			{ ...others },
@@ -95,10 +101,16 @@ export const login = async (req, res) => {
 			sameSite: "strict",
 		});
 
-		return res.status(200).json({ ...others, access_token });
+		return res.status(200).json({
+			code: 200,
+			message: "Login successful",
+			data: { ...others, access_token },
+		});
 	} catch (error) {
 		console.error(error);
-		return res.status(500).json({ message: "Internal server error" });
+		return res
+			.status(500)
+			.json({ code: 500, message: "Internal server error" });
 	}
 };
 
@@ -106,7 +118,9 @@ export const refresh = async (req, res) => {
 	const refresh_token = req.cookies.refresh_token;
 
 	if (!refresh_token) {
-		return res.status(401).json({ message: "You're not authenticated" });
+		return res
+			.status(401)
+			.json({ code: 401, message: "You're not authenticated" });
 	}
 
 	try {
@@ -121,7 +135,9 @@ export const refresh = async (req, res) => {
 		);
 		if (!existingToken || existingToken !== refresh_token) {
 			// If it is not, or does not match, return an error
-			return res.status(403).json({ message: "Invalid refresh token" });
+			return res
+				.status(403)
+				.json({ code: 403, message: "Invalid refresh token" });
 		}
 
 		// Extract the non-sensitive fields to include in the new tokens
@@ -148,14 +164,18 @@ export const refresh = async (req, res) => {
 		});
 
 		return res.status(200).json({
-			access_token: newAccessToken,
+			code: 200,
+			message: "Refresh token successful",
+			data: { access_token: newAccessToken },
 		});
 	} catch (error) {
 		if (error instanceof jwt.JsonWebTokenError) {
 			// Handle specific JWT errors
-			return res.status(403).json({ message: "Invalid token." });
+			return res.status(403).json({ code: 403, message: "Invalid token." });
 		}
 		console.error(error);
-		return res.status(500).json({ message: "Internal server error" });
+		return res
+			.status(500)
+			.json({ code: 500, message: "Internal server error" });
 	}
 };

@@ -7,16 +7,21 @@ export const accountList = async (req, res) => {
 		const count = await Account.countDocuments();
 		// Assuming accounts will always be an array; checking length is more appropriate
 		if (accounts.length > 0) {
-			return res.status(200).json({ total: count, data: accounts });
+			return res.status(200).json({ code: 200, total: count, data: accounts });
 		} else {
-			return res
-				.status(404)
-				.json({ total: count, data: [], message: "No accounts found" });
+			return res.status(404).json({
+				code: 404,
+				total: count,
+				data: [],
+				message: "No accounts found",
+			});
 		}
 	} catch (error) {
-		return res
-			.status(500)
-			.json({ message: "Internal server error", error: error.message });
+		return res.status(500).json({
+			code: 500,
+			message: "Internal server error",
+			error: error.message,
+		});
 	}
 };
 
@@ -29,7 +34,7 @@ export const addAccount = async (req, res) => {
 
 		// Check if user exists
 		if (!user) {
-			return res.status(403).json({ message: "User not found" });
+			return res.status(403).json({ code: 403, message: "User not found" });
 		}
 
 		// Check for missing fields
@@ -40,6 +45,7 @@ export const addAccount = async (req, res) => {
 			if (!access_token) missingFields.push("access_token");
 
 			return res.status(400).json({
+				code: 400,
 				message: `Required fields ${missingFields.join(", ")} are missing`,
 			});
 		}
@@ -49,6 +55,7 @@ export const addAccount = async (req, res) => {
 
 		if (existingAccount) {
 			return res.status(409).json({
+				code: 409,
 				message: "An account with the given access token already exists",
 			});
 		}
@@ -65,13 +72,17 @@ export const addAccount = async (req, res) => {
 		user.accounts.push(newAccount._id);
 		await user.save();
 
-		return res
-			.status(201)
-			.json({ message: "Account successfully added", result: newAccount });
+		return res.status(201).json({
+			code: 201,
+			message: "Account successfully added",
+			data: newAccount,
+		});
 	} catch (error) {
-		return res
-			.status(500)
-			.json({ message: "Internal server error", error: error.message });
+		return res.status(500).json({
+			code: 500,
+			message: "Internal server error",
+			error: error.message,
+		});
 	}
 };
 
@@ -82,13 +93,15 @@ export const deleteAccount = async (req, res) => {
 
 		// Validate account ID from the request parameters
 		if (!account_id) {
-			return res.status(400).json({ message: "Account ID is required." });
+			return res
+				.status(400)
+				.json({ code: 400, message: "Account ID is required." });
 		}
 
 		// Find the account by its ID
 		const account = await Account.findById(account_id);
 		if (!account) {
-			return res.status(404).json({ message: "Account not found." });
+			return res.status(404).json({ code: 404, message: "Account not found." });
 		}
 
 		// Check if the account belongs to the user making the request
@@ -96,7 +109,7 @@ export const deleteAccount = async (req, res) => {
 			// Assuming the 'user' field in 'Account' schema stores the _id of owning User
 			return res
 				.status(403)
-				.json({ message: "User does not own this account." });
+				.json({ code: 403, message: "User does not own this account." });
 		}
 
 		// Remove the account from the user's list of accounts
@@ -110,18 +123,22 @@ export const deleteAccount = async (req, res) => {
 			// Check if the User document was found and updated
 			return res
 				.status(404)
-				.json({ message: "User not found or no update needed." });
+				.json({ code: 404, message: "User not found or no update needed." });
 		}
 
 		// Proceed to delete the account
 		await Account.findByIdAndDelete(account_id);
 
-		return res.status(200).json({ message: "Account successfully deleted." });
+		return res
+			.status(200)
+			.json({ code: 200, message: "Account successfully deleted." });
 	} catch (error) {
 		// Catch any other errors that occur during the process
-		return res
-			.status(500)
-			.json({ message: "Internal server error.", error: error.message });
+		return res.status(500).json({
+			code: 500,
+			message: "Internal server error.",
+			error: error.message,
+		});
 	}
 };
 
@@ -135,7 +152,7 @@ export const updateAccount = async (req, res) => {
 
 		if (!account) {
 			// If no account is found, return a 404 Not Found status with a message
-			return res.status(404).json({ message: "Account not found" });
+			return res.status(404).json({ code: 404, message: "Account not found" });
 		}
 
 		// Update the account with the new data
@@ -147,13 +164,16 @@ export const updateAccount = async (req, res) => {
 
 		// If the update succeeded, return the updated account information
 		return res.status(200).json({
+			code: 200,
 			message: "Account successfully updated",
-			result: updatedAccount,
+			data: updatedAccount,
 		});
 	} catch (error) {
 		// In case of an error, respond with a 500 Internal Server Error status and the error message
-		return res
-			.status(500)
-			.json({ message: "Internal server error", error: error.message });
+		return res.status(500).json({
+			code: 500,
+			message: "Internal server error",
+			error: error.message,
+		});
 	}
 };

@@ -25,7 +25,7 @@ const ItemSchema = new Schema(
 			rating: Number,
 			previews: Object,
 		},
-		code: String,
+		code: { type: String, unique: true },
 	},
 	{ timestamps: true, collection: "Item" },
 );
