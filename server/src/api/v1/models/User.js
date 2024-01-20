@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
-const usersSchema = new Schema(
+const UserSchema = new Schema(
 	{
 		username: {
 			type: String,
@@ -29,12 +29,16 @@ const usersSchema = new Schema(
 			enum: ["USER", "ADMIN", "MODERATOR"],
 			default: "USER",
 		},
+		accounts: [
+			{
+				type: Schema.Types.ObjectId,
+				ref: "Account",
+			},
+		],
 	},
-	{ timestamps: true, collection: "Users" },
+	{ timestamps: true, collection: "User" },
 );
 
-usersSchema.index({ username: 1, email: 1 });
+const User = mongoose.model("User", UserSchema);
 
-const Users = mongoose.model("Users", usersSchema);
-
-export default Users;
+export default User;

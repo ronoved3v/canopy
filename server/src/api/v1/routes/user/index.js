@@ -1,7 +1,7 @@
 import { Router } from "express";
 const router = Router();
 
-import { userList } from "../../controllers/users/index.js";
+import { userList } from "../../controllers/user/index.js";
 
 import {
 	authenticateToken,

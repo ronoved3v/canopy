@@ -1,4 +1,4 @@
-import Users from "../../models/Users.js";
+import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import redis from "../../helpers/redis.js";
@@ -27,7 +27,7 @@ export const register = async (req, res) => {
 			});
 		}
 
-		const existingUser = await Users.findOne({
+		const existingUser = await User.findOne({
 			$or: [{ username: username }, { email: email }],
 		});
 
@@ -38,11 +38,11 @@ export const register = async (req, res) => {
 		const salt = await bcrypt.genSalt(10);
 		const hashed = await bcrypt.hash(password, salt);
 
-		const newUser = await Users.create({ username, password: hashed, email });
+		const newUser = await User.create({ username, password: hashed, email });
 
 		const { password: userPassword, ...others } = newUser._doc;
 
-		return res.status(200).json(others);
+		return res.status(201).json(others);
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ message: "Internal server error" });
@@ -61,7 +61,7 @@ export const login = async (req, res) => {
 			});
 		}
 
-		const user = await Users.findOne({
+		const user = await User.findOne({
 			$or: [{ username: username }, { email: username }],
 		});
 
