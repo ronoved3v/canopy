@@ -9,7 +9,25 @@ import routes from "./src/api/v1/routes/index.js";
 const app = express();
 
 // Middleware setup
-app.use(cors()); // Enable Cross-Origin Resource Sharing (CORS)
+
+const allowlist = ["http://localhost:3000"];
+const corsOptionsDelegate = function (req, callback) {
+	let corsOptions;
+	if (allowlist.indexOf(req.header("Origin")) !== -1) {
+		corsOptions = {
+			origin: true, // Reflect the requested origin in the CORS response
+			credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+		};
+	} else {
+		corsOptions = {
+			origin: false, // Disable CORS for this request
+			credentials: false, // Do not allow credentials
+		};
+	}
+	callback(null, corsOptions); // Callback expects two parameters: error and options
+};
+
+app.use(cors(corsOptionsDelegate));
 
 const accessLogStream = rfs.createStream("access.log", {
 	interval: "1d", // rotate daily

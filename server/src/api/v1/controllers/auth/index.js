@@ -22,6 +22,7 @@ export const register = async (req, res) => {
 
 		if (!username || !password || !email) {
 			return res.status(400).json({
+				code: 400,
 				message: `Missing required fields: ${!username ? "username" : ""} ${
 					!password ? "password" : ""
 				} ${!email ? "email" : ""}`.trim(),
@@ -62,6 +63,7 @@ export const login = async (req, res) => {
 
 		if (!username || !password) {
 			return res.status(400).json({
+				code: 400,
 				message: `Missing required fields: ${
 					!username ? "username or email" : ""
 				} ${!password ? "password" : ""}`.trim(),

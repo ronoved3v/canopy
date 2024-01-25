@@ -3,6 +3,7 @@ const router = Router();
 
 import {
 	itemList,
+	aItem,
 	itemScan,
 	getItemDownloadURL,
 } from "../../controllers/item/index.js";
@@ -14,6 +15,8 @@ import {
 
 // Item list
 router.get("/", itemList);
+// Get a item
+router.get("/:itemId", aItem);
 // Item scan
 router.post("/scan", itemScan);
 // Get download link item

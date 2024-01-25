@@ -86,13 +86,46 @@ export const itemScan = async (req, res) => {
 
 export const itemList = async (req, res) => {
 	try {
-		const items = await Item.find().populate({
+		const count = await Item.countDocuments();
+		const limit = Number(req.query.limit) || 8;
+		const page = Number(req.query.page) || 1;
+
+		const items = await Item.find()
+			.populate({
+				path: "account",
+				select: "-access_token -items",
+			})
+			.limit(limit * 1)
+			.skip((page - 1) * limit)
+			.sort({ sold_at: -1 });
+
+		if (items)
+			return res.status(200).json({
+				code: 200,
+				total: count,
+				pages: Math.ceil(count / limit),
+				page: page,
+				data: items,
+			});
+	} catch (error) {
+		logger.error(error);
+		return res
+			.status(500)
+			.json({ code: 500, message: "Internal server error", error: error });
+	}
+};
+
+export const aItem = async (req, res) => {
+	try {
+		const { itemId } = req.params;
+		const item = await Item.findById(itemId).populate({
 			path: "account",
 			select: "-access_token -items",
 		});
-		const count = await Item.countDocuments();
-		if (items)
-			return res.status(200).json({ code: 200, total: count, data: items });
+		if (!item)
+			return res.status(404).json({ code: 404, message: "Item not found" });
+
+		if (item) return res.status(200).json({ code: 200, data: item });
 	} catch (error) {
 		logger.error(error);
 		return res
