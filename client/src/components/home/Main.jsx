@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react";
 
 export default function Main({ children, ...props }) {
 	return (
-		<main className="h-full flex flex-col justify-center items-center">
+		<main className="p-8 grow">
+			Hello
 			<div>{children}</div>
 		</main>
 	);

@@ -32,13 +32,14 @@ export default async function Home({ ...props }) {
 	return (
 		<section className="flex flex-col h-screen max-h-screen justify-between">
 			<Header user={session.user} />
-			<DataTable
-				columns={columns}
-				data={data.data}
-				props={props}
-				meta={{ page: data.page, pages: data.pages }}
-			/>
-
+			<Main>
+				<DataTable
+					columns={columns}
+					data={data.data}
+					props={props}
+					meta={{ page: data.page, pages: data.pages }}
+				/>
+			</Main>
 			<Footer />
 		</section>
 	);
