@@ -18,7 +18,7 @@ export default function Footer() {
 					</a>
 					. The source code is available on
 					<a
-						href="https://github.com/antiantidev"
+						href="https://github.com/ronoved3v/canopy"
 						target="_blank"
 						rel="noreferrer"
 						className="font-medium underline underline-offset-4"

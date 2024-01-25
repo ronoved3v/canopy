@@ -35,7 +35,7 @@ export function DataTable({ columns, data, meta, ...props }) {
 	});
 
 	return (
-		<div className="p-8">
+		<div className="p-8 grow">
 			<div className="rounded-md border">
 				<Table>
 					<TableHeader>
