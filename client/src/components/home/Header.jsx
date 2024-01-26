@@ -11,6 +11,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import SignInOutButton from "./SignInOutButton";
 
 export default function Header({ user }) {
 	return (
@@ -41,7 +42,9 @@ export default function Header({ user }) {
 							<DropdownMenuItem>Profile</DropdownMenuItem>
 							<DropdownMenuItem>Billing</DropdownMenuItem>
 							<DropdownMenuItem>Team</DropdownMenuItem>
-							<DropdownMenuItem>Subscription</DropdownMenuItem>
+							<DropdownMenuItem>
+								<SignInOutButton />
+							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>

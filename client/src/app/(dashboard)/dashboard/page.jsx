@@ -11,11 +11,11 @@ export default async function Page() {
 	const session = await getServerSession(authOptions);
 
 	return (
-		<section>
-			<div>
+		<section className="w-full h-screen">
+			<div className="p-6">
 				<Welcome user={session.user} />
-				<div>Dashboard Page</div>
 			</div>
+			<div className="p-6">Dashboard Page</div>
 		</section>
 	);
 }

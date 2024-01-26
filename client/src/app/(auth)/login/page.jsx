@@ -20,7 +20,7 @@ function LoginPage() {
 	const [pending, setPending] = useState(false);
 	const { data: session, status } = useSession();
 	if (status === "authenticated") {
-		redirect("/dashboard");
+		redirect("/");
 	}
 	const loginController = async (e) => {
 		e.preventDefault();
@@ -38,7 +38,7 @@ function LoginPage() {
 				setTimeout(() => {
 					toast.success("Logged in successfully", { id: toastLogin });
 					setPending(false);
-					push("/dashboard");
+					redirect("/");
 				}, 500);
 			} else {
 				setTimeout(() => {

@@ -90,7 +90,11 @@ export function DataTable({ columns, data, meta, ...props }) {
 				<Button
 					variant="outline"
 					size="sm"
-					onClick={() => replace(`/?page=${currentPage - 1}`)}
+					onClick={() =>
+						replace(`/?page=${currentPage - 1}`, {
+							scroll: false,
+						})
+					}
 					disabled={currentPage === 1 || !currentPage}
 				>
 					Previous
@@ -100,7 +104,9 @@ export function DataTable({ columns, data, meta, ...props }) {
 					size="sm"
 					onClick={() => {
 						currentPage
-							? replace(`/?page=${currentPage + 1}`)
+							? replace(`/?page=${currentPage + 1}`, {
+									scroll: false,
+							  })
 							: replace(`/?page=2`);
 					}}
 					disabled={currentPage === pages}

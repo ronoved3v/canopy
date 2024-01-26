@@ -1,6 +1,14 @@
 import React from "react";
-import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
+
 export default function SignInOutButton() {
-	const { data: session } = useSession();
-	if (session && session.user) return <div>{session.user}</div>;
+	return (
+		<button
+			className="text-destructive"
+			variant="link"
+			onClick={() => signOut()}
+		>
+			Sign out
+		</button>
+	);
 }
