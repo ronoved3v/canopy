@@ -2,6 +2,27 @@ import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import axios from "axios";
+import { cookies } from "next/headers";
+
+// Function to parse a cookie string into an object
+function parseCookie(cookieString) {
+	// Create an object to store the parts of the cookie
+	const cookieObject = {};
+
+	// Split the cookie string into parts
+	const cookieParts = cookieString.split(";");
+
+	// Loop through each part of the cookie and add it to the object
+	cookieParts.forEach((part) => {
+		// Split each part into key and value
+		const [key, value] = part.trim().split("=");
+		// Add key-value pair to the cookie object
+		cookieObject[key] = value;
+	});
+
+	// Return the parsed cookie object
+	return cookieObject;
+}
 
 export const authOptions = {
 	pages: {
@@ -42,22 +63,28 @@ export const authOptions = {
 			async authorize(credentials, req) {
 				try {
 					const { username, password } = credentials;
-					const res = await axios.post(
+					const response = await axios.post(
 						process.env.BACKEND_API_URL + "/auth/login",
 						{
 							username,
 							password,
 						},
 					);
-					const result = await res.data;
+					const result = await response.data;
 
-					if (res.status !== 200) {
-						// console.log(res);
+					if (response.status !== 200) {
 						return null;
 					}
 
 					// If no error and we have user data, return it
 					if (result.code === 200 && result.data) {
+						const cookie = parseCookie(response.headers["set-cookie"][0]);
+
+						cookies().set("refresh_token", cookie.refresh_token, {
+							httpOnly: cookie.HttpOnly === undefined ? true : false,
+							path: cookie.Path,
+							sameSite: "Lax",
+						});
 						return result.data;
 					}
 					// Return null if user data could not be retrieved

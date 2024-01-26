@@ -33,7 +33,7 @@ export default function Header({ user }) {
 									src={`https://i.pravatar.cc/?u=${user.email}`}
 									alt={`@${user.username}`}
 								/>
-								<AvatarFallback>{user.username.split("")[0]}</AvatarFallback>
+								{/* <AvatarFallback>{user.username.split("")[0]}</AvatarFallback> */}
 							</Avatar>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent side="bottom" collisionPadding={32}>
